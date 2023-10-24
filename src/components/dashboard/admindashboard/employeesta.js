@@ -1,0 +1,191 @@
+import React, { useEffect, useState } from "react";
+import { FaPersonBooth } from "react-icons/fa";
+import { BsThreeDotsVertical } from "react-icons/bs";
+import { auth, db } from "../../../../utils/firebase";
+import { Timestamp } from "firebase/firestore";
+import {
+  query,
+  collection,
+  onSnapshot,
+  updateDoc,
+  doc,
+  addDoc,
+  getDoc,
+  deleteDoc,
+} from "firebase/firestore";
+
+const EmployeeStatus = () => {
+  const [manager, setManager] = useState([]);
+  const [technician, setTechnician] = useState([]);
+  const [collectionMan, setcollectionMan] = useState("");
+  const [collectionTech, setcollectionTech] = useState("");
+
+  const fetchData = () => {
+    const managerQ = query(collection(db, "manager"));
+    const technicianQ = query(collection(db, "technician"));
+
+    const unsubscribeManager = onSnapshot(managerQ, (querySnapshot) => {
+      const managerArr = querySnapshot.docs.map((doc) => ({
+        ...doc.data(),
+        id: doc.id,
+      }));
+      setManager(managerArr);
+    });
+
+    const unsubscribeTechnician = onSnapshot(technicianQ, (querySnapshot) => {
+      const techArr = querySnapshot.docs.map((doc) => ({
+        ...doc.data(),
+        id: doc.id,
+      }));
+      setTechnician(techArr);
+    });
+
+    return () => {
+      unsubscribeManager();
+      unsubscribeTechnician();
+    };
+  };
+
+  useEffect(() => {
+    fetchData();
+  }, []);
+
+  useEffect(() => {
+    const fetchTableName = () => {
+      const collectionMan = collection(db, "manager").id;
+      setcollectionMan(collectionMan);
+      const collectionTech = collection(db, "technician").id;
+      setcollectionTech(collectionTech);
+    };
+
+    fetchTableName();
+  }, []);
+
+  return (
+    <div className="h-[92vh] overflow-scroll">
+      <div className="bg-gray-100  capitalize">
+        <div className="flex justify-between px-4 pt-4">
+          <h2 className="font-medium text-xl">Employee Status</h2>
+        </div>
+        <div className="p-4">
+          <div className="w-full p-4 border rounded-lg bg-white overflow-y-auto">
+            <div className="my-3 p-2 grid md:grid-cols-4 sm:grid-cols-3 grid-cols-2  justify-between cursor-pointer items-center">
+              <span>Employee Name</span>
+              <span className="sm:text-left text-right ">Type</span>
+              <span className="hidden md:grid">Status </span>
+              <span className="hidden sm:grid">Upadated date</span>
+            </div>
+            <div>
+              <ul>
+                {manager.map((man, key) => (
+                  <li
+                    key={key}
+                    className="bg-gray-50 hover:bg-gray-100 rounded-lg my-3 text-sm p-1 grid md:grid-cols-4 sm:grid-cols-3 grid-cols-2 items-center justify-between"
+                  >
+                    <div className="flex">
+                      <div className="bg-purple-100 p-3 rounded-lg">
+                        <FaPersonBooth className="text-purple-800" />
+                      </div>
+
+                      <div className="flex justify-center items-center pl-2">
+                        <p className="text-gray-800 font-bold ">{man.name}</p>
+                      </div>
+                    </div>
+                    <div>
+                      <p>{collectionMan}</p>
+                    </div>
+                    <div>
+                      <p className="text-gray-600 sm:text-left text-right">
+                        <span
+                          className={
+                            man.status === "active"
+                              ? `bg-green-200 p-2 rounded-lg`
+                              : man.status === "inactive"
+                              ? `bg-red-200 p-2 rounded-lg`
+                              : ""
+                          }
+                        >
+                          {man.status}
+                        </span>
+                      </p>
+                    </div>
+
+                    {/* date should be dynamic */}
+                    <p className="hidden md:flex">
+                      <>
+                        {new Date(
+                          man.timestamp.seconds * 1000
+                        ).toLocaleDateString()}
+                      </>
+                    </p>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div className="bg-gray-100  capitalize">
+        <div className="p-4">
+          <div className="w-full p-4 border rounded-lg bg-white overflow-y-auto">
+            <div className="my-3 p-2 grid md:grid-cols-4 sm:grid-cols-3 grid-cols-2  justify-between cursor-pointer items-center">
+              <span>Employee Name</span>
+              <span className="sm:text-left text-right ">Type</span>
+              <span className="hidden md:grid">Status </span>
+              <span className="hidden sm:grid">Upadated date</span>
+            </div>
+
+            <div>
+              <ul>
+                {technician.map((tec, key) => (
+                  <li
+                    key={key}
+                    className="bg-gray-50 hover:bg-gray-100 text-sm p-1 rounded-lg my-3  grid md:grid-cols-4 sm:grid-cols-3 grid-cols-2 items-center justify-between"
+                  >
+                    <div className="flex">
+                      <div className="bg-purple-100 p-3 rounded-lg">
+                        <FaPersonBooth className="text-purple-800" />
+                      </div>
+
+                      <div className="flex justify-center items-center pl-2">
+                        <p className="text-gray-800 font-bold ">{tec.name}</p>
+                      </div>
+                    </div>
+                    <div>
+                      <p>{collectionTech}</p>
+                    </div>
+                    <div>
+                      <p className="text-gray-600 sm:text-left text-right">
+                        <span
+                          className={
+                            tec.status === "active"
+                              ? `bg-green-200 p-2 rounded-lg`
+                              : tec.status === "inactive"
+                              ? `bg-red-200 p-2 rounded-lg`
+                              : ""
+                          }
+                        >
+                          {tec.status}
+                        </span>
+                      </p>
+                    </div>
+
+                    {/* date should be dynamic */}
+                    <p className="hidden md:flex">
+                      <>
+                        {new Date(tec.date.seconds * 1000).toLocaleDateString()}
+                      </>
+                    </p>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+export default EmployeeStatus;
